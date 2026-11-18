@@ -2,7 +2,6 @@ package com.example.demo;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.HttpStatusCode;
@@ -24,33 +23,32 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestController 
 @RequestMapping("/task")
 public class TaskController {
-private List<Task>tasks  = new ArrayList<>();
+
+private final TaskService taskService; //final so that the taskcontroller object will always use the same taskservice object instead of accidently creating new ones
+
+public TaskController(TaskService taskService){
+    this.taskService = taskService; //constructor dependency injection used so that when a taskcontroller object is created a taskservice object is created always unlike @Autowired where its not mandatory to enforce it and where the field cant be made final
+}
+
+
 @GetMapping
 public List<Task> getTasks() {
-    return tasks;
+    return taskService.getTasks();
 }
 @GetMapping("/{id}")
 public Task getTask(@PathVariable Long id) {
-    for(Task x:tasks){
-        if(x.getId().equals(id)){
-            return x;
-        }
-    }
-    System.out.println("Task not found");
-    return null;
-
+    return taskService.getTask(id);
 }
+
 @PutMapping("/{id}")
 public ResponseEntity<Task> updateTask(
         @PathVariable Long id,
         @RequestBody Task updatedTask) {
-  for(Task x:tasks){
-        if(x.getId().equals(id)){
-            x.setTitle(updatedTask.getTitle());
-            x.setCompleted(updatedTask.isCompleted());
-            return ResponseEntity.ok(x);
-        }
-    }
+            if(taskService.updateTask(id, updatedTask)){
+                return     ResponseEntity.ok(updatedTask);
+            }
+            
+ 
     return ResponseEntity.notFound().build();
 
 
@@ -58,15 +56,13 @@ public ResponseEntity<Task> updateTask(
 
 @PostMapping
 public Task postMethodName(@RequestBody Task task) {
-   tasks.add(task);
-    
-    return task;
+   return taskService.addTask(task);
 }
 
 
 @DeleteMapping("/{id}")
 public ResponseEntity<Void> deleteTask(@PathVariable Long id){
-     boolean done = tasks.removeIf((x)->x.getId().equals(id));
+     boolean done = taskService.deleteTask(id);
      if(done){
         return ResponseEntity.noContent().build();
      }
